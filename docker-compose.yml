@@ -1,0 +1,49 @@
+services:
+  log360-web-portal:
+    image: nginx:alpine
+    container_name: log360-web-portal
+    ports:
+      - "8080:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - shared-logs:/usr/share/nginx/html/logs:ro
+    networks:
+      - log360-network
+    restart: unless-stopped
+
+  log360-collector:
+    image: alpine:latest
+    container_name: log360-collector
+    command: sh -c "nc -u -l -p 514 > /logs/syslog_received.log"
+    ports:
+      - "514:514/udp"
+    volumes:
+      - shared-logs:/logs
+    networks:
+      - log360-network
+    restart: unless-stopped
+
+  log-generator:
+    image: python:3.11-slim
+    container_name: log360-generator
+    volumes:
+      - ./generator:/app:ro
+      - shared-logs:/logs
+    command: python /app/log_generator.py
+    environment:
+      - LOG_OUTPUT_DIR=/logs
+      - STREAM_SYSLOG=true
+      - SYSLOG_HOST=log360-collector
+    depends_on:
+      - log360-collector
+    networks:
+      - log360-network
+    restart: unless-stopped
+
+volumes:
+  shared-logs:
+    driver: local
+
+networks:
+  log360-network:
+    driver: bridge

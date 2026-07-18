@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TryHackMe / HTB Room: ManageEngine LOG360 Incident Response Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b0e14;
+            --bg-card: #121824;
+            --bg-card-hover: #182234;
+            --border-color: #1e293b;
+            --border-highlight: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-green-glow: rgba(16, 185, 129, 0.2);
+            --accent-blue: #06b6d4;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --accent-amber: #f59e0b;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-code: 'JetBrains Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+
+        .navbar {
+            background: rgba(18, 24, 36, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky; top: 0; z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .brand-container { display: flex; align-items: center; gap: 12px; }
+        .brand-logo {
+            width: 38px; height: 38px;
+            background: linear-gradient(135deg, #10b981, #06b6d4);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; color: #0b0e14; font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--accent-green-glow);
+        }
+
+        .brand-title {
+            font-weight: 700; font-size: 1.2rem;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .nav-stats { display: flex; align-items: center; gap: 16px; }
+        .stat-badge {
+            background: #1e293b; border: 1px solid var(--border-color);
+            padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .stat-badge span.highlight { color: var(--accent-green); font-weight: 700; }
+
+        .container {
+            max-width: 1400px; margin: 0 auto; padding: 2rem;
+            display: grid; grid-template-columns: 1fr; gap: 2rem;
+        }
+
+        .hero-card {
+            background: linear-gradient(135deg, rgba(18, 24, 36, 0.95), rgba(15, 23, 42, 0.98));
+            border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; position: relative;
+        }
+        .hero-card::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%;
+            background: linear-gradient(to bottom, var(--accent-green), var(--accent-blue));
+        }
+
+        .hero-tag {
+            background: rgba(16, 185, 129, 0.15); color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 12px; border-radius: 6px;
+            font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        }
+
+        .hero-title { font-size: 1.8rem; font-weight: 800; margin: 8px 0; }
+        .hero-desc { color: var(--text-secondary); font-size: 0.95rem; max-width: 950px; margin-bottom: 1.25rem; }
+
+        .progress-container { background: #1e293b; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 1rem; }
+        .progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-green), var(--accent-blue)); transition: width 0.4s ease; }
+
+        /* SIEM Console */
+        .siem-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        .siem-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; }
+
+        .search-controls { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1rem; margin-bottom: 1rem; }
+        .search-input {
+            width: 100%; background: #0f172a; border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 10px 14px; border-radius: 8px;
+            font-family: var(--font-code); font-size: 0.9rem;
+        }
+        .select-input { background: #0f172a; border: 1px solid var(--border-color); color: var(--text-primary); padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; }
+        .btn-search { background: linear-gradient(135deg, #06b6d4, #0284c7); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        .table-responsive { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); max-height: 440px; overflow-y: auto; background: #0d131f; }
+        .log-table { width: 100%; border-collapse: collapse; font-family: var(--font-code); font-size: 0.825rem; }
+        .log-table th { background: #161e2e; color: var(--text-secondary); text-align: left; padding: 12px 14px; position: sticky; top: 0; border-bottom: 1px solid var(--border-color); }
+        .log-table td { padding: 9px 14px; border-bottom: 1px solid rgba(30, 41, 59, 0.4); }
+
+        .badge-severity { padding: 2px 7px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+        .severity-CRITICAL { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); border: 1px solid rgba(239, 68, 68, 0.4); }
+        .severity-HIGH { background: rgba(245, 158, 11, 0.2); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.4); }
+        .severity-INFO { background: rgba(6, 182, 212, 0.2); color: var(--accent-blue); border: 1px solid rgba(6, 182, 212, 0.4); }
+
+        /* Remediation Section */
+        .remediation-card {
+            background: linear-gradient(135deg, #131d2e, #0f172a);
+            border: 1px solid rgba(6, 182, 212, 0.4);
+            border-radius: 16px; padding: 1.75rem;
+        }
+
+        .tasks-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
+        .task-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 1.75rem; }
+        .task-card.completed { border-color: rgba(16, 185, 129, 0.5); background: linear-gradient(135deg, rgba(18, 24, 36, 0.95), rgba(16, 185, 129, 0.04)); }
+
+        .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+        .task-number { font-size: 0.85rem; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; }
+        .task-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .task-desc { color: var(--text-secondary); font-size: 0.925rem; margin-bottom: 1rem; }
+
+        .mitre-badge {
+            display: inline-flex; align-items: center; gap: 6px; background: #1e293b;
+            border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 6px;
+            font-size: 0.8rem; color: var(--accent-purple); font-family: var(--font-code);
+        }
+
+        .questions-list { display: flex; flex-direction: column; gap: 1.25rem; margin-top: 1.25rem; }
+        .question-item { background: #0d131f; border: 1px solid var(--border-color); padding: 1.25rem; border-radius: 10px; }
+        .question-text { font-size: 0.925rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .question-format { font-size: 0.8rem; color: var(--text-muted); font-style: italic; margin-bottom: 0.75rem; }
+
+        .answer-row { display: flex; gap: 0.75rem; }
+        .answer-input { flex: 1; background: #161e2e; border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 14px; border-radius: 6px; font-family: var(--font-code); font-size: 0.875rem; }
+
+        .btn-submit { background: var(--accent-green); color: #0b0e14; border: none; padding: 8px 18px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+        .btn-hint { background: transparent; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 8px 14px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; }
+
+        .hint-box { display: none; margin-top: 0.75rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--accent-amber); padding: 10px; border-radius: 6px; font-size: 0.85rem; }
+        .walkthrough-box { display: none; margin-top: 1rem; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1.25rem; border-radius: 8px; }
+        .code-block { background: #090d16; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-family: var(--font-code); font-size: 0.85rem; color: var(--accent-blue); word-break: break-all; }
+
+        .feedback-text { margin-top: 0.5rem; font-size: 0.85rem; font-weight: 600; }
+        .feedback-success { color: var(--accent-green); }
+        .feedback-error { color: var(--accent-red); }
+
+        /* Education & Learning Sections */
+        .edu-section {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; overflow: hidden;
+        }
+        .edu-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.25rem 1.5rem; cursor: pointer; user-select: none;
+            background: linear-gradient(135deg, rgba(18, 24, 36, 0.95), rgba(15, 23, 42, 0.9));
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        .edu-header:hover { background: var(--bg-card-hover); }
+        .edu-header-left { display: flex; align-items: center; gap: 12px; }
+        .edu-header-icon { font-size: 1.4rem; }
+        .edu-header-title { font-size: 1.15rem; font-weight: 700; }
+        .edu-header-subtitle { font-size: 0.85rem; color: var(--text-muted); }
+        .edu-toggle { font-size: 1.2rem; color: var(--text-muted); transition: transform 0.3s; }
+        .edu-toggle.open { transform: rotate(180deg); }
+        .edu-body { padding: 1.5rem; display: none; }
+        .edu-body.open { display: block; }
+
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .info-card {
+            background: #0d131f; border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 1.25rem;
+        }
+        .info-card-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .info-card-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.35rem; }
+        .info-card-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.55; }
+
+        .component-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .component-item {
+            display: flex; align-items: flex-start; gap: 12px;
+            background: #0d131f; border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 1rem;
+        }
+        .component-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+        .component-name { font-weight: 700; font-size: 0.9rem; color: var(--accent-blue); }
+        .component-desc { font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px; }
+
+        .gartner-banner {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(6, 182, 212, 0.08));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 12px; padding: 1.25rem; margin-top: 1.25rem;
+            display: flex; align-items: center; gap: 16px;
+        }
+        .gartner-icon { font-size: 2rem; }
+        .gartner-text { font-size: 0.9rem; color: var(--text-secondary); }
+        .gartner-text strong { color: var(--accent-purple); }
+
+        .resource-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+        .resource-card {
+            background: #0d131f; border: 1px solid var(--border-color);
+            border-radius: 10px; padding: 1.25rem;
+            transition: all 0.2s; text-decoration: none; display: block;
+        }
+        .resource-card:hover { border-color: var(--accent-blue); background: #131d2e; transform: translateY(-2px); }
+        .resource-type {
+            font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+            margin-bottom: 0.5rem; padding: 2px 8px; border-radius: 4px; display: inline-block;
+        }
+        .type-docs { background: rgba(6, 182, 212, 0.15); color: var(--accent-blue); }
+        .type-video { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .type-training { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .type-cert { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+        .type-community { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); }
+        .resource-title { font-weight: 600; font-size: 0.925rem; color: var(--text-primary); margin-bottom: 0.3rem; }
+        .resource-desc { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Query Syntax Reference Table */
+        .syntax-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin: 1rem 0; }
+        .syntax-table th { background: #161e2e; color: var(--text-secondary); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border-color); }
+        .syntax-table td { padding: 10px 14px; border-bottom: 1px solid rgba(30, 41, 59, 0.4); }
+        .syntax-table tr:hover { background: rgba(30, 41, 59, 0.4); }
+        .syntax-table code { background: #090d16; padding: 2px 6px; border-radius: 4px; font-family: var(--font-code); color: var(--accent-green); font-size: 0.825rem; }
+
+        .pipeline-diagram {
+            display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin: 1.5rem 0;
+            align-items: center;
+        }
+        .pipeline-step {
+            text-align: center; padding: 1rem 0.5rem; position: relative;
+        }
+        .pipeline-step-icon { font-size: 1.6rem; margin-bottom: 0.4rem; }
+        .pipeline-step-title { font-size: 0.8rem; font-weight: 700; color: var(--accent-blue); }
+        .pipeline-step-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+        .pipeline-arrow { text-align: center; color: var(--text-muted); font-size: 1.2rem; padding-top: 0.5rem; }
+
+        /* Infographic Cards */
+        .infographic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 1.5rem 0; }
+        .infographic-card {
+            background: #0d131f; border: 1px solid var(--border-color);
+            border-radius: 12px; overflow: hidden; cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .infographic-card:hover { border-color: var(--accent-blue); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(6, 182, 212, 0.15); }
+        .infographic-card img { width: 100%; display: block; border-bottom: 1px solid var(--border-color); }
+        .infographic-card-label {
+            padding: 0.75rem 1rem; display: flex; align-items: center; gap: 8px;
+            font-size: 0.85rem; font-weight: 600; color: var(--text-secondary);
+        }
+        .infographic-card-label span.infographic-icon { font-size: 1.1rem; }
+        .infographic-full { grid-column: 1 / -1; }
+
+        /* Lightbox Modal */
+        .lightbox-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.92); z-index: 9999;
+            justify-content: center; align-items: center; cursor: zoom-out;
+        }
+        .lightbox-overlay.active { display: flex; }
+        .lightbox-overlay img { max-width: 92%; max-height: 90vh; border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); }
+        .lightbox-close {
+            position: absolute; top: 24px; right: 32px; color: white;
+            font-size: 2rem; cursor: pointer; background: none; border: none; z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="brand-container">
+            <div class="brand-logo">L360</div>
+            <div class="brand-title">ManageEngine LOG360 Hardened IR Lab</div>
+        </div>
+        <div class="nav-stats">
+            <div class="stat-badge">Progress: <span class="highlight" id="completed-count">0</span> / 6 Tasks</div>
+            <div class="stat-badge">Solved Questions: <span class="highlight" id="solved-questions-count">0</span> / 19</div>
+            <div class="stat-badge">Score: <span class="highlight" id="total-score">0</span> pts</div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="hero-card">
+            <span class="hero-tag">SOC Analyst Incident Challenge</span>
+            <h1 class="hero-title">ManageEngine LOG360 Incident Response & Remediation</h1>
+            <p class="hero-desc">
+                Investigate <strong>194+ enterprise event logs</strong> in LOG360, detect the adversary kill-chain, and execute real-world SOC playbook remediation steps (PowerShell Active Directory containment, Windows service removal, IIS hardening, firewall blocking) to stop the breach!
+            </p>
+            <div class="progress-container">
+                <div class="progress-fill" id="main-progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- 🖼️ Visual Infographics Gallery -->
+        <div class="edu-section">
+            <div class="edu-header" onclick="toggleSection('edu-infographics')">
+                <div class="edu-header-left">
+                    <span class="edu-header-icon">🖼️</span>
+                    <div>
+                        <div class="edu-header-title">Visual Infographics — Quick Reference Posters</div>
+                        <div class="edu-header-subtitle">Click any infographic to zoom in. Print them or save them for your SOC wall!</div>
+                    </div>
+                </div>
+                <span class="edu-toggle open" id="edu-infographics-toggle">▼</span>
+            </div>
+            <div class="edu-body open" id="edu-infographics-body">
+                <div class="infographic-grid">
+                    <div class="infographic-card" onclick="openLightbox('images/log360_pipeline.jpg')">
+                        <img src="images/log360_pipeline.jpg" alt="LOG360 Data Pipeline — How It Works" loading="lazy">
+                        <div class="infographic-card-label">
+                            <span class="infographic-icon">📊</span>
+                            LOG360 Data Pipeline — How It Works
+                        </div>
+                    </div>
+                    <div class="infographic-card" onclick="openLightbox('images/attack_killchain.jpg')">
+                        <img src="images/attack_killchain.jpg" alt="Attack Kill Chain — MegaCorp Intrusion Timeline" loading="lazy">
+                        <div class="infographic-card-label">
+                            <span class="infographic-icon">⚔️</span>
+                            Attack Kill Chain — MegaCorp Intrusion Timeline
+                        </div>
+                    </div>
+                    <div class="infographic-card" onclick="openLightbox('images/event_ids_cheatsheet.jpg')">
+                        <img src="images/event_ids_cheatsheet.jpg" alt="Windows Event IDs — SOC Analyst Cheat Sheet" loading="lazy">
+                        <div class="infographic-card-label">
+                            <span class="infographic-icon">🆔</span>
+                            Windows Event IDs — SOC Analyst Cheat Sheet
+                        </div>
+                    </div>
+                    <div class="infographic-card" onclick="openLightbox('images/search_query_reference.jpg')">
+                        <img src="images/search_query_reference.jpg" alt="LOG360 Search Query Quick Reference" loading="lazy">
+                        <div class="infographic-card-label">
+                            <span class="infographic-icon">🔍</span>
+                            LOG360 Search Query Quick Reference
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 1: What is ManageEngine LOG360? -->
+        <div class="edu-section">
+            <div class="edu-header" onclick="toggleSection('edu-log360')">
+                <div class="edu-header-left">
+                    <span class="edu-header-icon">📘</span>
+                    <div>
+                        <div class="edu-header-title">Section 1: What is ManageEngine LOG360?</div>
+                        <div class="edu-header-subtitle">Understand the platform, its components, and its global SIEM ranking</div>
+                    </div>
+                </div>
+                <span class="edu-toggle open" id="edu-log360-toggle">▼</span>
+            </div>
+            <div class="edu-body open" id="edu-log360-body">
+                <h3 style="font-size: 1.1rem; margin-bottom: 1rem;">What is LOG360?</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.7; margin-bottom: 1.25rem;">
+                    <strong style="color: var(--text-primary);">ManageEngine Log360</strong> is a <strong style="color: var(--accent-blue);">unified SIEM (Security Information and Event Management)</strong> solution built by Zoho Corporation. Unlike traditional standalone log collectors, LOG360 integrates multiple specialized security modules into a single dashboard—giving SOC analysts one place to monitor Active Directory, cloud environments, endpoints, web servers, firewalls, and databases across the entire enterprise infrastructure.
+                </p>
+
+                <h4 style="font-size: 0.95rem; margin-bottom: 0.75rem; color: var(--accent-blue);">How LOG360 Works — Data Pipeline</h4>
+                <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">LOG360 operates through a 6-stage security data pipeline that transforms raw logs into actionable SOC intelligence:</p>
+
+                <div class="pipeline-diagram">
+                    <div class="pipeline-step">
+                        <div class="pipeline-step-icon">📥</div>
+                        <div class="pipeline-step-title">1. Log Collection</div>
+                        <div class="pipeline-step-desc">Agent-based & agentless collection from 700+ sources</div>
+                    </div>
+                    <div class="pipeline-step">
+                        <div class="pipeline-step-icon">⚙️</div>
+                        <div class="pipeline-step-title">2. Normalization</div>
+                        <div class="pipeline-step-desc">Parse, index & standardize raw logs (Elasticsearch engine)</div>
+                    </div>
+                    <div class="pipeline-step">
+                        <div class="pipeline-step-icon">🔗</div>
+                        <div class="pipeline-step-title">3. Correlation</div>
+                        <div class="pipeline-step-desc">Connect related events across multiple log sources</div>
+                    </div>
+                    <div class="pipeline-step">
+                        <div class="pipeline-step-icon">🧠</div>
+                        <div class="pipeline-step-title">4. UEBA Analytics</div>
+                        <div class="pipeline-step-desc">ML behavioral baselines detect anomalies & insider threats</div>
+                    </div>
+                    <div class="pipeline-step">
+                        <div class="pipeline-step-icon">🌐</div>
+                        <div class="pipeline-step-title">5. Threat Intel</div>
+                        <div class="pipeline-step-desc">STIX/TAXII feeds match IoCs against known malicious IPs</div>
+                    </div>
+                    <div class="pipeline-step">
+                        <div class="pipeline-step-icon">🚨</div>
+                        <div class="pipeline-step-title">6. Incident Response</div>
+                        <div class="pipeline-step-desc">SOAR playbooks trigger alerts, tickets & auto-containment</div>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 0.95rem; margin: 1.25rem 0 0.75rem; color: var(--accent-blue);">LOG360 Core Integrated Modules</h4>
+                <div class="component-list">
+                    <div class="component-item">
+                        <span class="component-icon">🖥️</span>
+                        <div>
+                            <div class="component-name">EventLog Analyzer</div>
+                            <div class="component-desc">The primary SIEM engine. Centralizes log collection, normalization, archiving, and forensic analysis from 700+ sources (firewalls, servers, databases, switches, IDS/IPS). Supports Windows Event Logs, Syslog, and custom app logs.</div>
+                        </div>
+                    </div>
+                    <div class="component-item">
+                        <span class="component-icon">🏢</span>
+                        <div>
+                            <div class="component-name">ADAudit Plus</div>
+                            <div class="component-desc">Real-time Active Directory auditing and monitoring. Tracks logon/logoff events (Event IDs 4624, 4625, 4634), GPO changes, user/group modifications, file integrity monitoring, and privilege escalation within Windows AD environments.</div>
+                        </div>
+                    </div>
+                    <div class="component-item">
+                        <span class="component-icon">☁️</span>
+                        <div>
+                            <div class="component-name">Cloud Security Plus</div>
+                            <div class="component-desc">Provides visibility into public cloud infrastructure (AWS CloudTrail, Azure Activity Logs, GCP audit logs). Monitors cloud resource changes, IAM policy modifications, and storage bucket access patterns.</div>
+                        </div>
+                    </div>
+                    <div class="component-item">
+                        <span class="component-icon">📧</span>
+                        <div>
+                            <div class="component-name">M365 Security Plus</div>
+                            <div class="component-desc">Audits Microsoft 365 environments including Exchange Online mailbox access, Azure AD/Entra ID sign-in logs, SharePoint permissions, Teams activity, and OneDrive file sharing events.</div>
+                        </div>
+                    </div>
+                    <div class="component-item">
+                        <span class="component-icon">🛡️</span>
+                        <div>
+                            <div class="component-name">UEBA & SOAR Add-ons</div>
+                            <div class="component-desc">User and Entity Behavior Analytics (UEBA) uses machine learning to establish behavioral baselines and detect anomalies. Security Orchestration, Automation, and Response (SOAR) enables automated incident playbooks and ticket creation.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gartner-banner">
+                    <span class="gartner-icon">🏆</span>
+                    <div class="gartner-text">
+                        <strong>Gartner Magic Quadrant Recognition (2024 & 2025):</strong><br>
+                        ManageEngine LOG360 has been recognized in the <strong>Gartner Magic Quadrant for SIEM</strong> in both 2024 and 2025 — the leading industry analyst ranking for Security Information & Event Management platforms. It is positioned alongside enterprise solutions like Splunk, Microsoft Sentinel, IBM QRadar, and Elastic Security, making it one of the most cost-effective enterprise-grade SIEM solutions available today.
+                    </div>
+                </div>
+
+                <div class="info-grid" style="margin-top: 1.25rem;">
+                    <div class="info-card">
+                        <div class="info-card-icon">📊</div>
+                        <div class="info-card-title">Why SOC Analysts Use LOG360</div>
+                        <div class="info-card-text">
+                            • Single-pane-of-glass view across hybrid environments<br>
+                            • 700+ pre-built log source integrations<br>
+                            • Out-of-the-box compliance reports (GDPR, HIPAA, PCI-DSS, SOX, NIST)<br>
+                            • AI-powered "Zia Insights" for alert triage & MITRE ATT&CK mapping<br>
+                            • Built-in incident workflows and ITSM ticket integration
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-icon">⚖️</div>
+                        <div class="info-card-title">LOG360 vs. Other SIEM Solutions</div>
+                        <div class="info-card-text">
+                            • <strong>vs. Splunk:</strong> Lower cost, simpler deployment, built-in AD auditing<br>
+                            • <strong>vs. Microsoft Sentinel:</strong> On-premises support, no Azure lock-in<br>
+                            • <strong>vs. IBM QRadar:</strong> Faster setup, integrated UEBA included<br>
+                            • <strong>vs. ELK Stack:</strong> Managed SIEM with compliance reports out-of-box<br>
+                            • <strong>vs. Wazuh:</strong> Commercial support, integrated AD/M365 auditing
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Extra Learning Materials & Resources -->
+        <div class="edu-section">
+            <div class="edu-header" onclick="toggleSection('edu-resources')">
+                <div class="edu-header-left">
+                    <span class="edu-header-icon">📚</span>
+                    <div>
+                        <div class="edu-header-title">Section 2: Learning Resources & Extra Materials</div>
+                        <div class="edu-header-subtitle">Official documentation, video tutorials, training programs, and certification paths</div>
+                    </div>
+                </div>
+                <span class="edu-toggle open" id="edu-resources-toggle">▼</span>
+            </div>
+            <div class="edu-body open" id="edu-resources-body">
+                <div class="resource-grid">
+                    <a href="https://www.manageengine.com/log-management/" target="_blank" class="resource-card">
+                        <span class="resource-type type-docs">Official Docs</span>
+                        <div class="resource-title">LOG360 Product Documentation</div>
+                        <div class="resource-desc">Complete installation, configuration, and administration guide for LOG360 & EventLog Analyzer.</div>
+                    </a>
+                    <a href="https://www.manageengine.com/log-management/help/search-log-data.html" target="_blank" class="resource-card">
+                        <span class="resource-type type-docs">Search Reference</span>
+                        <div class="resource-title">LOG360 Search Query Syntax Guide</div>
+                        <div class="resource-desc">Official documentation on Boolean operators, wildcards, comparison operators, and grouped searches.</div>
+                    </a>
+                    <a href="https://www.manageengine.com/products/eventlog/help/Alerts/eventid-windows-alerts.html" target="_blank" class="resource-card">
+                        <span class="resource-type type-docs">Event ID Reference</span>
+                        <div class="resource-title">Windows Event ID Alert Reference</div>
+                        <div class="resource-desc">Comprehensive list of critical Windows Security Event IDs (4625, 4624, 4740, 7045, 4688) for SOC monitoring.</div>
+                    </a>
+                    <a href="https://www.youtube.com/results?search_query=ManageEngine+Log360+tutorial" target="_blank" class="resource-card">
+                        <span class="resource-type type-video">Video Tutorials</span>
+                        <div class="resource-title">LOG360 YouTube Video Walkthroughs</div>
+                        <div class="resource-desc">Product demo videos covering log search, alert creation, compliance reporting, and incident response workflows.</div>
+                    </a>
+                    <a href="https://www.manageengine.com/log-management/log360-elevate.html" target="_blank" class="resource-card">
+                        <span class="resource-type type-training">Self-Paced Training</span>
+                        <div class="resource-title">LOG360 Elevate — E-Learning Program</div>
+                        <div class="resource-desc">ManageEngine's official self-paced training program with structured modules covering SIEM operations & threat detection.</div>
+                    </a>
+                    <a href="https://www.manageengine.com/training.html" target="_blank" class="resource-card">
+                        <span class="resource-type type-cert">Certification</span>
+                        <div class="resource-title">MECPA — ManageEngine Certified Product Associate</div>
+                        <div class="resource-desc">Earn official ManageEngine certification by completing the LOG360 training series. Validates SIEM & IT management skills.</div>
+                    </a>
+                    <a href="https://attack.mitre.org/matrices/enterprise/" target="_blank" class="resource-card">
+                        <span class="resource-type type-community">MITRE ATT&CK</span>
+                        <div class="resource-title">MITRE ATT&CK Enterprise Matrix</div>
+                        <div class="resource-desc">The global standard knowledge base of adversary tactics and techniques used to classify detected security threats.</div>
+                    </a>
+                    <a href="https://www.manageengine.com/products/eventlog/real-time-event-correlation.html" target="_blank" class="resource-card">
+                        <span class="resource-type type-docs">Correlation Engine</span>
+                        <div class="resource-title">Real-Time Event Correlation Guide</div>
+                        <div class="resource-desc">Learn how LOG360 connects related events across multiple sources to detect multi-stage attack patterns.</div>
+                    </a>
+                    <a href="https://pitstop.manageengine.com/portal/en/community/log360" target="_blank" class="resource-card">
+                        <span class="resource-type type-community">Community Forum</span>
+                        <div class="resource-title">LOG360 PitStop Community Forum</div>
+                        <div class="resource-desc">Ask questions, share use cases, and get help from ManageEngine engineers and fellow SOC analysts.</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 3 / TASK 0: LOG360 Search Query Practice -->
+        <div class="edu-section">
+            <div class="edu-header" onclick="toggleSection('edu-querypractice')">
+                <div class="edu-header-left">
+                    <span class="edu-header-icon">🧪</span>
+                    <div>
+                        <div class="edu-header-title">Task 0: LOG360 Search Query Practice (Warm-Up)</div>
+                        <div class="edu-header-subtitle">Master the LOG360 search syntax before starting the investigation tasks</div>
+                    </div>
+                </div>
+                <span class="edu-toggle open" id="edu-querypractice-toggle">▼</span>
+            </div>
+            <div class="edu-body open" id="edu-querypractice-body">
+
+                <h4 style="font-size: 1rem; margin-bottom: 1rem;">📖 LOG360 Search Query Syntax Reference</h4>
+                <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.75rem;">
+                    Before investigating the attack scenarios, familiarize yourself with the LOG360 search operators used in this lab. The search console below supports the following query syntax:
+                </p>
+
+                <div style="border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden;">
+                    <table class="syntax-table">
+                        <thead>
+                            <tr>
+                                <th>Operator / Technique</th>
+                                <th>Syntax</th>
+                                <th>Example Query</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Keyword Search</strong></td>
+                                <td><code>keyword</code></td>
+                                <td><code>powershell</code></td>
+                                <td>Search any field for the keyword</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Filter by Log Source</strong></td>
+                                <td><code>LogType:value</code></td>
+                                <td><code>ADAudit_Plus</code> (use dropdown)</td>
+                                <td>Filter events from a specific LOG360 module</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Filter by Event ID</strong></td>
+                                <td><code>EventID</code></td>
+                                <td><code>4625</code></td>
+                                <td>Search for specific Windows Event ID numbers</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Filter by Hostname</strong></td>
+                                <td><code>hostname</code></td>
+                                <td><code>DC01.MEGACORP.LOCAL</code></td>
+                                <td>Isolate events from a specific server or endpoint</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Filter by Username</strong></td>
+                                <td><code>username</code></td>
+                                <td><code>a.davis</code></td>
+                                <td>Find all activity associated with a user account</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Filter by Source IP</strong></td>
+                                <td><code>IP address</code></td>
+                                <td><code>10.14.22.99</code></td>
+                                <td>Find all events originating from a specific IP</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Filter by Severity</strong></td>
+                                <td><code>CRITICAL / HIGH / INFO</code></td>
+                                <td>Use severity dropdown</td>
+                                <td>Isolate events by severity classification level</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Process Name</strong></td>
+                                <td><code>process_name</code></td>
+                                <td><code>vssadmin</code></td>
+                                <td>Search for specific process executions in Sysmon logs</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="font-size: 1rem; margin: 1.5rem 0 0.75rem;">🎯 Practice Questions — Test Your LOG360 Search Skills</h4>
+                <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1rem;">
+                    Use the <strong>LOG360 SIEM Search Console</strong> below to answer these warm-up questions. These will help you become comfortable with filtering, searching, and navigating the log repository before tackling the real incident investigation.
+                </p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">Q1. How many total event logs are loaded in the LOG360 repository? (Look at the dataset counter above the search table)</div>
+                        <div class="question-format">Format: integer</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t0-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(0, 1, '0d5b20ff1e4e66f226b8c21bdcf33eb7e1a71d02fc5f2c94dfa1ac5cc5f9a068')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t0-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t0-q1-hint">Check the "Repository Loaded: X Total Logs" text next to the LOG360 Search Console title.</div>
+                        <div class="feedback-text" id="t0-q1-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">Q2. How many log events have <strong>CRITICAL</strong> severity? (Use the Severity dropdown filter)</div>
+                        <div class="question-format">Format: integer</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t0-q2-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(0, 2, '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t0-q2-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t0-q2-hint">Select "CRITICAL" from the severity dropdown and count the total results shown in the pagination bar.</div>
+                        <div class="feedback-text" id="t0-q2-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">Q3. What LOG360 module (Log Source) would you use to investigate Active Directory logon failures? (Use the Log Source dropdown)</div>
+                        <div class="question-format">Format: Module_Name</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t0-q3-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(0, 3, '4e60e33e3b85d04a799ea1dfa7aaebe30fa4ccf8fc7b0c96f07bf3fb8a0aca4b')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t0-q3-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t0-q3-hint">Which module name in the Log Source dropdown mentions "AD Events"? It starts with "ADAudit".</div>
+                        <div class="feedback-text" id="t0-q3-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">Q4. Search for Event ID <code>4625</code> in the LOG360 console. How many failed logon events appear in the results?</div>
+                        <div class="question-format">Format: integer</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t0-q4-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(0, 4, 'd4735e3a265e16eee03f59718b9b5d03019c07d8b6c51f90da3a666eec13ab35')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t0-q4-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t0-q4-hint">Type "4625" in the search box and press Search. The pagination bar shows "Showing X-Y of Z logs".</div>
+                        <div class="feedback-text" id="t0-q4-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">Q5. Filter by Log Source = <strong>Sysmon</strong> and Severity = <strong>CRITICAL</strong>. What hostname appears most frequently in the results?</div>
+                        <div class="question-format">Format: HOSTNAME.DOMAIN</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t0-q5-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(0, 5, 'c0dfde774a09e8c12cdc71dd89cd4a29e8b3afdd9b7eed7b91cf5c80703f1c0a')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t0-q5-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t0-q5-hint">Select "Sysmon" and "CRITICAL" from the dropdowns. Look at the Host column — which host appears in multiple CRITICAL Sysmon events?</div>
+                        <div class="feedback-text" id="t0-q5-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t0-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 8px;">✅ Task 0 Completed! You are now ready for the Incident Investigation!</div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                        You have mastered the LOG360 search operators. Now proceed to Tasks 1–6 below to investigate the full attack kill-chain across the MegaCorp enterprise network.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOG360 Console -->
+        <div class="siem-card">
+            <div class="siem-header">
+                <div>
+                    <span style="font-size: 1.2rem; font-weight: 700;">🔍 LOG360 SIEM Search Console</span>
+                    <span style="margin-left: 12px; font-size: 0.85rem; color: var(--text-muted);" id="dataset-info-text">Loading logs...</span>
+                </div>
+            </div>
+
+            <div class="search-controls">
+                <input type="text" id="siem-query-input" class="search-input" placeholder="Enter query (e.g., 4625, powershell, 10.14.22.99, vssadmin, ADAudit_Plus)..." onkeyup="if(event.key==='Enter') runSiemSearch()">
+                <select id="filter-log-type" class="select-input" onchange="runSiemSearch()">
+                    <option value="ALL">All Log Sources</option>
+                    <option value="ADAudit_Plus">ADAudit Plus (AD Events)</option>
+                    <option value="Sysmon">Sysmon (Process & Network)</option>
+                    <option value="EventLog_Analyzer">EventLog Analyzer (System)</option>
+                    <option value="Web_Server_Log">Web Server Logs</option>
+                </select>
+                <select id="filter-severity" class="select-input" onchange="runSiemSearch()">
+                    <option value="ALL">All Severities</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="INFO">INFO</option>
+                </select>
+                <button class="btn-search" onclick="runSiemSearch()">Search LOG360</button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source</th>
+                            <th>Event ID</th>
+                            <th>Severity</th>
+                            <th>Host</th>
+                            <th>Target / User</th>
+                            <th>Log Message</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body">
+                        <!-- Populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+                <span id="page-count-text">Showing 1-15 of 0 logs</span>
+                <div>
+                    <button class="btn-hint" id="btn-prev-page" onclick="changePage(-1)">Previous</button>
+                    <button class="btn-hint" id="btn-next-page" onclick="changePage(1)">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real World SOC Remediation Playbook Card -->
+        <div class="remediation-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3 style="color: var(--accent-blue); font-size: 1.25rem;">🛠️ Real-World SOC Remediation & Incident Containment Guide</h3>
+                <span class="mitre-badge" style="color: var(--accent-green);">Playbook Active</span>
+            </div>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                Once you identify malicious activity in LOG360, use the corresponding real-world PowerShell / System Administration containment commands detailed in <a href="REMEDIATION_PLAYBOOK.md" target="_blank" style="color: var(--accent-blue);">REMEDIATION_PLAYBOOK.md</a> to eradicate the threat:
+            </p>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="code-block" style="font-size: 0.8rem;">
+                    <strong>Disable AD Account:</strong><br>
+                    Disable-ADAccount -Identity "a.davis"
+                </div>
+                <div class="code-block" style="font-size: 0.8rem;">
+                    <strong>Delete Persistence Service:</strong><br>
+                    sc.exe delete WinHealthMonitorSvc
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Container -->
+        <div class="tasks-grid">
+
+            <!-- Task 1 -->
+            <div class="task-card" id="task-card-1">
+                <div class="task-header">
+                    <span class="task-number">Task 1 of 6</span>
+                    <span class="mitre-badge">T1110.003 - Password Spraying</span>
+                </div>
+                <h3 class="task-title">Task 1: Active Directory Password Spraying & Lockout</h3>
+                <p class="task-desc">An attacker launched an NTLM password spray against Domain Controller <code>DC01.MEGACORP.LOCAL</code>.</p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">1. What is the source IP address of the attacker initiating the password spray?</div>
+                        <div class="question-format">Format: X.X.X.X</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t1-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(1, 1, 'b115eb51ec0dfc9497e68cfb0ca5f5d8ca41c6f3d17a7a275caee0f339cf0656')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t1-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t1-q1-hint">Query LOG360 for ADAudit_Plus logs with Event ID 4625. Check the source_ip field.</div>
+                        <div class="feedback-text" id="t1-q1-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">2. Which domain user account was locked out (`Event ID 4740`) as a result?</div>
+                        <div class="question-format">Format: username</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t1-q2-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(1, 2, '7823f66ed852ee37e2bbfd7e97d195fbcf69542a17ff3555ae3b313ef047cf8e')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t1-q2-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t1-q2-hint">Filter for Event ID 4740 in ADAudit_Plus logs.</div>
+                        <div class="feedback-text" id="t1-q2-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">3. What sub_status hex code in Event ID 4625 logs indicates a bad password failure?</div>
+                        <div class="question-format">Format: 0xXXXXXXXX</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t1-q3-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(1, 3, '9f3c7e7b0e1189d2d0c268fa30bdc81bf3c4573887132148419266e74efc2ddb')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t1-q3-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t1-q3-hint">Inspect the sub_status field in the failed logon event log.</div>
+                        <div class="feedback-text" id="t1-q3-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t1-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">✅ Task 1 Completed! LOG360 Investigation & Remediation Analysis</div>
+                    <div class="code-block">LOG360 Query: LogType:ADAudit_Plus AND (EventID:4625 OR EventID:4740)</div>
+                    <div class="code-block" style="color: var(--accent-green); margin-top: 6px;">Remediation Command: Disable-ADAccount -Identity "a.davis"</div>
+                </div>
+            </div>
+
+            <!-- Task 2 -->
+            <div class="task-card" id="task-card-2">
+                <div class="task-header">
+                    <span class="task-number">Task 2 of 6</span>
+                    <span class="mitre-badge">T1059.001 - Encoded PowerShell</span>
+                </div>
+                <h3 class="task-title">Task 2: Suspicious PowerShell Execution & Reverse Shell</h3>
+                <p class="task-desc">An encoded PowerShell payload was spawned from a malicious phishing macro on <code>WKSTN-FIN01.MEGACORP.LOCAL</code>.</p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">1. What destination port was targeted by the outbound PowerShell network connection?</div>
+                        <div class="question-format">Format: integer</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t2-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(2, 1, '3b8d697858c148ae847e33a41e97d2e0717208d172e811b702ec405a468d6d6a')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t2-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t2-q1-hint">Check Sysmon Event ID 3 for network connection destination_port.</div>
+                        <div class="feedback-text" id="t2-q1-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">2. What parent process launched `powershell.exe` on `WKSTN-FIN01.MEGACORP.LOCAL`?</div>
+                        <div class="question-format">Format: process.exe</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t2-q2-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(2, 2, '2b7b51b72e5ee96538b7d425bc5bf1a343a410385dfd7857211bf5a35607386d')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t2-q2-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t2-q2-hint">Check Sysmon Event ID 1 parent_process field.</div>
+                        <div class="feedback-text" id="t2-q2-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t2-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">✅ Task 2 Completed! LOG360 Investigation & Remediation Analysis</div>
+                    <div class="code-block">LOG360 Query: LogType:Sysmon AND ProcessName:powershell.exe</div>
+                    <div class="code-block" style="color: var(--accent-green); margin-top: 6px;">Remediation Command: Stop-Process -Name "powershell" -Force</div>
+                </div>
+            </div>
+
+            <!-- Task 3 -->
+            <div class="task-card" id="task-card-3">
+                <div class="task-header">
+                    <span class="task-number">Task 3 of 6</span>
+                    <span class="mitre-badge">T1543.003 - Service Persistence</span>
+                </div>
+                <h3 class="task-title">Task 3: Privilege Escalation & Persistence via Service Creation</h3>
+                <p class="task-desc">A backdoor service was installed in System log (`Event ID 7045`) for persistent administrative execution.</p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">1. What is the exact service_name of the installed backdoor service?</div>
+                        <div class="question-format">Format: string</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t3-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(3, 1, 'c672b166f2b4c59d83df149b1ff590dfbf83b4820875e5330aa1f1aa9b96eb2d')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t3-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t3-q1-hint">Search EventLog_Analyzer for Event ID 7045.</div>
+                        <div class="feedback-text" id="t3-q1-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">2. What is the full executable path specified for this malicious service?</div>
+                        <div class="question-format">Format: C:\path\to\file.exe</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t3-q2-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(3, 2, '8dfc6d4db6624ef84c7a6e788eb28bd22bd2ca82d9669527cfdbb16b472e3427')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t3-q2-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t3-q2-hint">Examine service_file_name field in Event ID 7045 log.</div>
+                        <div class="feedback-text" id="t3-q2-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t3-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">✅ Task 3 Completed! LOG360 Investigation & Remediation Analysis</div>
+                    <div class="code-block">LOG360 Query: EventID:7045 AND Host:WKSTN-FIN01.MEGACORP.LOCAL</div>
+                    <div class="code-block" style="color: var(--accent-green); margin-top: 6px;">Remediation Command: sc.exe delete WinHealthMonitorSvc</div>
+                </div>
+            </div>
+
+            <!-- Task 4 -->
+            <div class="task-card" id="task-card-4">
+                <div class="task-header">
+                    <span class="task-number">Task 4 of 6</span>
+                    <span class="mitre-badge">T1021.002 - PsExec Lateral Movement</span>
+                </div>
+                <h3 class="task-title">Task 4: Lateral Movement via PsExec Pivoting</h3>
+                <p class="task-desc">The attacker pivoted from <code>WKSTN-FIN01</code> to file server <code>FILE-SRV01</code> using stolen Domain Admin credentials.</p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">1. What binary process name (`Sysmon Event ID 1`) was executed under `services.exe` during PsExec remote invocation?</div>
+                        <div class="question-format">Format: filename.exe</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t4-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(4, 1, 'f1ae55b7661ebac0eb87eef9e4b6d4bb5ca8179261ffef6d420a321cfdfc63b4')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t4-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t4-q1-hint">Check process_name for Sysmon Process Creation on FILE-SRV01.</div>
+                        <div class="feedback-text" id="t4-q1-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t4-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">✅ Task 4 Completed! LOG360 Investigation & Remediation Analysis</div>
+                    <div class="code-block">LOG360 Query: Host:FILE-SRV01.MEGACORP.LOCAL AND ProcessName:PSEXESVC.exe</div>
+                    <div class="code-block" style="color: var(--accent-green); margin-top: 6px;">Remediation Command: Set-ADAccountPassword -Identity "Administrator" -Reset</div>
+                </div>
+            </div>
+
+            <!-- Task 5 -->
+            <div class="task-card" id="task-card-5">
+                <div class="task-header">
+                    <span class="task-number">Task 5 of 6</span>
+                    <span class="mitre-badge">T1505.003 - ASPX Web Shell</span>
+                </div>
+                <h3 class="task-title">Task 5: Web Shell Execution on DMZ Web Server</h3>
+                <p class="task-desc">An uploaded ASPX web shell script was executed on DMZ web server <code>WEB-DMZ01</code>.</p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">1. What is the exact URI path of the uploaded web shell script?</div>
+                        <div class="question-format">Format: /path/to/shell.aspx</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t5-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(5, 1, '24b4f0ef18d9600e1ff4dd9ff0ebcbfeeb8f47f2a1b9fb543fbcf2a67a0dfd66')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t5-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t5-q1-hint">Filter Web_Server_Log or Sysmon Event ID 11 on WEB-DMZ01.</div>
+                        <div class="feedback-text" id="t5-q1-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">2. What specific User-Agent string was used by the attacker to interact with the web shell?</div>
+                        <div class="question-format">Format: ToolName/version</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t5-q2-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(5, 2, '3dfc82ae9e29aefb20c90c74149fa5a9b7348981442c8d2077e6417fec74581f')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t5-q2-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t5-q2-hint">Check user_agent in Web_Server_Log HTTP POST event.</div>
+                        <div class="feedback-text" id="t5-q2-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t5-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">✅ Task 5 Completed! LOG360 Investigation & Remediation Analysis</div>
+                    <div class="code-block">LOG360 Query: Host:WEB-DMZ01 AND LogType:Web_Server_Log</div>
+                    <div class="code-block" style="color: var(--accent-green); margin-top: 6px;">Remediation Command: Remove-Item "C:\inetpub\wwwroot\assets\vendors\shell_v2.aspx" -Force</div>
+                </div>
+            </div>
+
+            <!-- Task 6 -->
+            <div class="task-card" id="task-card-6">
+                <div class="task-header">
+                    <span class="task-number">Task 6 of 6</span>
+                    <span class="mitre-badge">T1490 - Ransomware Shadow Copy Deletion</span>
+                </div>
+                <h3 class="task-title">Task 6: Ransomware Execution & Shadow Copy Deletion</h3>
+                <p class="task-desc">Volume shadow copies were wiped out prior to network share file encryption on <code>FILE-SRV01</code>.</p>
+
+                <div class="questions-list">
+                    <div class="question-item">
+                        <div class="question-text">1. What command flag argument was passed to `vssadmin.exe` to suppress confirmation prompts?</div>
+                        <div class="question-format">Format: /flag</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t6-q1-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(6, 1, 'd942ab7eb7e583c749efb01efb54cf04fa070e6e7fbceeebece2fecf54ecb0ee')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t6-q1-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t6-q1-hint">Check command_line for vssadmin.exe in Sysmon logs.</div>
+                        <div class="feedback-text" id="t6-q1-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">2. What new file extension was appended to encrypted files on the file server?</div>
+                        <div class="question-format">Format: .EXTENSION</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t6-q2-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(6, 2, '1edb2ae3625f385c5ed721c56ab859c2b4c107297e28b185b306b3e34bcae5fa')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t6-q2-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t6-q2-hint">Look for share_name modifications in Event ID 5145 logs.</div>
+                        <div class="feedback-text" id="t6-q2-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="walkthrough-box" id="t6-walkthrough">
+                    <div style="color: var(--accent-green); font-weight: 700; margin-bottom: 4px;">✅ Task 6 Completed! LOG360 Investigation & Remediation Analysis</div>
+                    <div class="code-block">LOG360 Query: ProcessName:vssadmin.exe OR EventID:5145</div>
+                    <div class="code-block" style="color: var(--accent-green); margin-top: 6px;">Remediation Action: Isolate Storage Server & Restore Immutable Snapshots</div>
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9rem;">
+            Designed & Created by <strong>Ahmed Atef</strong><br>
+            <span style="font-size: 0.8rem; margin-top: 4px; display: inline-block;">ManageEngine LOG360 Incident Response Lab</span>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let filteredLogs = [];
+        let currentPage = 1;
+        const pageSize = 15;
+
+        const solvedQuestions = new Set();
+        const taskQuestionCounts = { 0: 5, 1: 3, 2: 2, 3: 2, 4: 1, 5: 2, 6: 2 };
+        const taskSolvedCounts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        let totalScore = 0;
+
+        async function sha256(str) {
+            const buffer = new TextEncoder().encode(str);
+            const digest = await crypto.subtle.digest('SHA-256', buffer);
+            return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function verifyFlag(taskId, qId, expectedHash) {
+            const inputEl = document.getElementById(`t${taskId}-q${qId}-input`);
+            const feedbackEl = document.getElementById(`t${taskId}-q${qId}-feedback`);
+            const rawVal = inputEl.value.trim();
+
+            if (!rawVal) {
+                feedbackEl.className = 'feedback-text feedback-error';
+                feedbackEl.textContent = 'Please enter an answer first!';
+                return;
+            }
+
+            const inputHash = await sha256(rawVal.toLowerCase());
+
+            if (inputHash === expectedHash) {
+                feedbackEl.className = 'feedback-text feedback-success';
+                feedbackEl.textContent = '🎉 Correct Answer! Flag Validated.';
+                inputEl.disabled = true;
+
+                const qKey = `${taskId}-${qId}`;
+                if (!solvedQuestions.has(qKey)) {
+                    solvedQuestions.add(qKey);
+                    taskSolvedCounts[taskId]++;
+                    totalScore += 100;
+                    updateStats();
+
+                    if (taskSolvedCounts[taskId] === taskQuestionCounts[taskId]) {
+                        const taskCard = document.getElementById(`task-card-${taskId}`);
+                        if (taskCard) taskCard.classList.add('completed');
+                        const walkthrough = document.getElementById(`t${taskId}-walkthrough`);
+                        if (walkthrough) walkthrough.style.display = 'block';
+                    }
+                }
+            } else {
+                feedbackEl.className = 'feedback-text feedback-error';
+                feedbackEl.textContent = '❌ Incorrect. Search LOG360 repository and try again!';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('solved-questions-count').textContent = solvedQuestions.size;
+            document.getElementById('total-score').textContent = totalScore;
+
+            let completedTasksCount = 0;
+            for (let t = 1; t <= 6; t++) {
+                if (taskSolvedCounts[t] === taskQuestionCounts[t]) completedTasksCount++;
+            }
+            document.getElementById('completed-count').textContent = completedTasksCount;
+            document.getElementById('main-progress-bar').style.width = Math.round((completedTasksCount / 6) * 100) + '%';
+        }
+
+        function toggleSection(sectionId) {
+            const body = document.getElementById(sectionId + '-body');
+            const toggle = document.getElementById(sectionId + '-toggle');
+            if (body.classList.contains('open')) {
+                body.classList.remove('open');
+                toggle.classList.remove('open');
+            } else {
+                body.classList.add('open');
+                toggle.classList.add('open');
+            }
+        }
+
+        function toggleHint(hintId) {
+            const h = document.getElementById(hintId);
+            h.style.display = h.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function renderTablePage() {
+            const tbody = document.getElementById('log-table-body');
+            tbody.innerHTML = '';
+
+            const start = (currentPage - 1) * pageSize;
+            const pageLogs = filteredLogs.slice(start, start + pageSize);
+
+            if (pageLogs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--text-muted);">No logs matching query criteria found in LOG360 repository.</td></tr>';
+            } else {
+                pageLogs.forEach(log => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${log.timestamp}</td>
+                        <td><strong style="color: var(--accent-blue);">${log.log_type}</strong></td>
+                        <td><code>${log.event_id}</code></td>
+                        <td><span class="badge-severity severity-${log.severity}">${log.severity}</span></td>
+                        <td>${log.host}</td>
+                        <td>${log.target_user || log.source_ip || 'N/A'}</td>
+                        <td style="word-break: break-all;">${log.message}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            const total = filteredLogs.length;
+            const totalPages = Math.ceil(total / pageSize) || 1;
+            const end = Math.min(start + pageSize, total);
+            document.getElementById('page-count-text').textContent = total > 0 ? `Showing ${start + 1}-${end} of ${total} logs (Page ${currentPage} of ${totalPages})` : '0 logs found';
+            
+            document.getElementById('btn-prev-page').disabled = currentPage <= 1;
+            document.getElementById('btn-next-page').disabled = currentPage >= totalPages;
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            renderTablePage();
+        }
+
+        function runSiemSearch() {
+            const query = document.getElementById('siem-query-input').value.toLowerCase().trim();
+            const logType = document.getElementById('filter-log-type').value;
+            const severity = document.getElementById('filter-severity').value;
+
+            filteredLogs = allLogs.filter(log => {
+                const matchesLogType = logType === 'ALL' || log.log_type === logType;
+                const matchesSeverity = severity === 'ALL' || log.severity === severity;
+                const matchesQuery = !query ||
+                    log.event_id.toString().includes(query) ||
+                    log.host.toLowerCase().includes(query) ||
+                    log.log_type.toLowerCase().includes(query) ||
+                    (log.target_user && log.target_user.toLowerCase().includes(query)) ||
+                    (log.source_ip && log.source_ip.toLowerCase().includes(query)) ||
+                    log.message.toLowerCase().includes(query);
+                return matchesLogType && matchesSeverity && matchesQuery;
+            });
+
+            currentPage = 1;
+            renderTablePage();
+        }
+
+        function generateLogsInBrowser() {
+            const hosts = ["DC01.MEGACORP.LOCAL", "DC02.MEGACORP.LOCAL", "WKSTN-FIN01.MEGACORP.LOCAL", "WKSTN-HR02.MEGACORP.LOCAL", "WKSTN-DEV03.MEGACORP.LOCAL", "FILE-SRV01.MEGACORP.LOCAL", "WEB-DMZ01"];
+            const users = ["j.smith", "a.davis", "m.johnson", "r.taylor", "k.wilson", "b.clark", "Administrator", "SYSTEM"];
+            const ips = ["192.168.1.10", "192.168.1.15", "192.168.1.42", "192.168.1.88", "192.168.1.100"];
+            
+            const logs = [];
+            const baseTime = new Date(Date.now() - 3 * 3600 * 1000);
+
+            for (let i = 0; i < 180; i++) {
+                const t = new Date(baseTime.getTime() + i * 55000);
+                const timeStr = t.toISOString().replace('T', ' ').substring(0, 19);
+                const ltype = ["ADAudit_Plus", "Sysmon", "EventLog_Analyzer", "Web_Server_Log"][i % 4];
+                const h = hosts[i % hosts.length];
+                const u = users[i % users.length];
+                const ip = ips[i % ips.length];
+
+                logs.push({
+                    timestamp: timeStr,
+                    log_type: ltype,
+                    event_id: ltype === "ADAudit_Plus" ? 4624 : (ltype === "Sysmon" ? 1 : 200),
+                    severity: "INFO",
+                    host: h,
+                    target_user: u,
+                    source_ip: ip,
+                    message: `Routine system telemetry event for ${u} on ${h}. Status=SUCCESS.`
+                });
+            }
+
+            const injectAttack = (offsetMins, ltype, eid, sev, host, user, ip, msg) => {
+                const t = new Date(baseTime.getTime() + offsetMins * 60000);
+                logs.push({
+                    timestamp: t.toISOString().replace('T', ' ').substring(0, 19),
+                    log_type: ltype,
+                    event_id: eid,
+                    severity: sev,
+                    host: host,
+                    target_user: user,
+                    source_ip: ip,
+                    message: msg
+                });
+            };
+
+            // Task 1
+            injectAttack(25, "ADAudit_Plus", 4625, "HIGH", "DC01.MEGACORP.LOCAL", "j.smith", "10.14.22.99", "Failed logon attempt via NTLM password spray (sub_status: 0xC000006A) from workstation ATTACKER-KALI.");
+            injectAttack(26, "ADAudit_Plus", 4625, "HIGH", "DC01.MEGACORP.LOCAL", "a.davis", "10.14.22.99", "Failed logon attempt via NTLM password spray (sub_status: 0xC000006A) from workstation ATTACKER-KALI.");
+            injectAttack(27, "ADAudit_Plus", 4740, "CRITICAL", "DC01.MEGACORP.LOCAL", "a.davis", "10.14.22.99", "User account a.davis locked out due to threshold violation.");
+
+            // Task 2
+            injectAttack(45, "Sysmon", 1, "CRITICAL", "WKSTN-FIN01.MEGACORP.LOCAL", "m.johnson", "192.168.1.15", "powershell.exe -nop -w hidden -EncodedCommand JABjAGwAaQ... (ParentProcess: excel.exe)");
+            injectAttack(46, "Sysmon", 3, "HIGH", "WKSTN-FIN01.MEGACORP.LOCAL", "m.johnson", "10.14.22.99", "Outbound TCP connection from powershell.exe to 10.14.22.99:8888.");
+
+            // Task 3
+            injectAttack(65, "EventLog_Analyzer", 7045, "CRITICAL", "WKSTN-FIN01.MEGACORP.LOCAL", "SYSTEM", "192.168.1.15", "Service installed: WinHealthMonitorSvc Path: C:\\Users\\Public\\Libraries\\svc_host_patch.exe -daemon");
+
+            // Task 4
+            injectAttack(90, "ADAudit_Plus", 4624, "HIGH", "FILE-SRV01.MEGACORP.LOCAL", "Administrator", "192.168.1.15", "Successful Logon Type 10 (RDP) from WKSTN-FIN01 for user Administrator.");
+            injectAttack(91, "Sysmon", 1, "CRITICAL", "FILE-SRV01.MEGACORP.LOCAL", "SYSTEM", "192.168.1.15", "PSEXESVC.exe started under parent services.exe.");
+
+            // Task 5
+            injectAttack(115, "Web_Server_Log", 200, "HIGH", "WEB-DMZ01", "cpool\\w3wp", "198.51.100.77", "HTTP POST /assets/vendors/shell_v2.aspx 200 OK (User-Agent: Chopper-WebShell/4.1)");
+            injectAttack(116, "Sysmon", 11, "CRITICAL", "WEB-DMZ01", "cpool\\w3wp", "198.51.100.77", "File created: C:\\inetpub\\wwwroot\\assets\\vendors\\shell_v2.aspx by w3wp.exe");
+
+            // Task 6
+            injectAttack(140, "Sysmon", 1, "CRITICAL", "FILE-SRV01.MEGACORP.LOCAL", "SYSTEM", "192.168.1.15", "vssadmin.exe delete shadows /all /quiet executed by lockbit_v3.exe");
+            injectAttack(141, "EventLog_Analyzer", 5145, "CRITICAL", "FILE-SRV01.MEGACORP.LOCAL", "Administrator", "192.168.1.15", "Mass SMB network share file access: \\\\*\\C$\\PAYROLL_2026.LOCKBIT");
+
+            logs.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+            return logs;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            allLogs = generateLogsInBrowser();
+            filteredLogs = [...allLogs];
+            document.getElementById('dataset-info-text').textContent = `Repository Loaded: ${allLogs.length} Total Logs`;
+            runSiemSearch();
+        });
+        // Lightbox Functions
+        function openLightbox(imgSrc) {
+            const overlay = document.getElementById('lightboxOverlay');
+            const img = document.getElementById('lightboxImage');
+            img.src = imgSrc;
+            overlay.classList.add('active');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightboxOverlay').classList.remove('active');
+        }
+
+        // Close lightbox on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeLightbox();
+        });
+    </script>
+
+    <!-- Lightbox Overlay Container -->
+    <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">
+        <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+        <img id="lightboxImage" src="" alt="Full Screen Infographic" onclick="event.stopPropagation()">
+    </div>
+</body>
+</html>

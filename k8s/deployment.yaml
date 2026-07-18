@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log360-web-portal
+  namespace: log360-lab
+  labels:
+    app: log360-web-portal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log360-web-portal
+  template:
+    metadata:
+      labels:
+        app: log360-web-portal
+    spec:
+      containers:
+      - name: web-portal
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+          name: http
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /usr/share/nginx/html/logs
+      - name: log-generator
+        image: python:3.11-slim
+        command: ["sh", "-c", "pip install --no-cache-dir requests && python /app/log_generator.py"]
+        envFrom:
+        - configMapRef:
+            name: log360-lab-config
+        resources:
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+        volumeMounts:
+        - name: shared-logs
+          mountPath: /logs
+      volumes:
+      - name: shared-logs
+        emptyDir: {}

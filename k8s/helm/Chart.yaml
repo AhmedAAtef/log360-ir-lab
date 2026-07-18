@@ -1,0 +1,12 @@
+apiVersion: v2
+name: log360-ir-lab
+description: Helm chart for TryHackMe/HackTheBox style ManageEngine LOG360 Incident Response Lab
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - security
+  - incident-response
+  - log360
+  - tryhackme
+  - hackthebox
