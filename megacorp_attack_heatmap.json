@@ -1,0 +1,123 @@
+{
+    "name": "MegaCorp Intrusion - LOG360 Lab",
+    "versions": {
+        "attack": "16",
+        "navigator": "5.1.0",
+        "layer": "4.5"
+    },
+    "domain": "enterprise-attack",
+    "description": "MITRE ATT&CK heatmap for the ManageEngine LOG360 Incident Response Lab. Upload this file to https://mitre-attack.github.io/attack-navigator/ to view the adversary kill-chain.",
+    "filters": {
+        "platforms": [
+            "Windows"
+        ]
+    },
+    "sorting": 0,
+    "layout": {
+        "layout": "side",
+        "aggregateFunction": "average",
+        "showID": false,
+        "showName": true,
+        "showAggregateScores": false,
+        "countUnscored": false
+    },
+    "hideDisabled": false,
+    "techniques": [
+        {
+            "techniqueID": "T1110.003",
+            "tactic": "credential-access",
+            "color": "#e60d0d",
+            "comment": "Task 1: Password Spraying against AD accounts",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": true
+        },
+        {
+            "techniqueID": "T1059.001",
+            "tactic": "execution",
+            "color": "#f28b18",
+            "comment": "Task 2: PowerShell Reverse Shell via Encoded Command",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": true
+        },
+        {
+            "techniqueID": "T1543.003",
+            "tactic": "persistence",
+            "color": "#f2da18",
+            "comment": "Task 3: Windows Service Persistence (WinHealthMonitorSvc)",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": true
+        },
+        {
+            "techniqueID": "T1543.003",
+            "tactic": "privilege-escalation",
+            "color": "#f2da18",
+            "comment": "Task 3: Windows Service Privilege Escalation (WinHealthMonitorSvc)",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": true
+        },
+        {
+            "techniqueID": "T1569.002",
+            "tactic": "execution",
+            "color": "#18f2f2",
+            "comment": "Task 4: PsExec Lateral Movement (PSEXESVC.exe)",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": true
+        },
+        {
+            "techniqueID": "T1505.003",
+            "tactic": "persistence",
+            "color": "#a818f2",
+            "comment": "Task 5: Web Shell Deployment (ASPX shell on IIS)",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": true
+        },
+        {
+            "techniqueID": "T1490",
+            "tactic": "impact",
+            "color": "#910e0e",
+            "comment": "Task 6: Inhibit System Recovery (vssadmin delete shadows)",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": false
+        },
+        {
+            "techniqueID": "T1486",
+            "tactic": "impact",
+            "color": "#910e0e",
+            "comment": "Task 6: Data Encrypted for Impact (Ransomware)",
+            "enabled": true,
+            "metadata": [],
+            "links": [],
+            "showSubtechniques": false
+        }
+    ],
+    "gradient": {
+        "colors": [
+            "#ff6666ff",
+            "#ffe766ff",
+            "#8ec843ff"
+        ],
+        "minValue": 0,
+        "maxValue": 100
+    },
+    "legendItems": [],
+    "metadata": [],
+    "links": [],
+    "showTacticRowBackground": false,
+    "tacticRowBackground": "#dddddd",
+    "selectTechniquesAcrossTactics": true,
+    "selectSubtechniquesWithParent": false
+}

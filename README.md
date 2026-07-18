@@ -9,6 +9,13 @@ Welcome to the **ManageEngine LOG360 Incident Response Learning Lab**! Designed 
 
 ---
 
+## 🌟 Professional Features
+* **Automated Certificate of Completion**: Students who successfully complete all tasks will dynamically generate a downloadable, personalized Certificate of Completion signed by the instructor.
+* **Network PCAP Analysis**: Task 5 includes a realistic Wireshark `.pcap` capture file to correlate HTTP requests with the LOG360 web server logs.
+* **MITRE ATT&CK Heatmap**: The project includes a `megacorp_attack_heatmap.json` file. Upload this to the [official MITRE ATT&CK Navigator](https://mitre-attack.github.io/attack-navigator/) to visualize the attacker's kill chain!
+
+---
+
 ## 🚀 Deployment Options
 
 ### Option 1: Standalone Browser (Quickest & Easiest)

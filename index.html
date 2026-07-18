@@ -958,7 +958,8 @@
                     <span class="mitre-badge">T1505.003 - ASPX Web Shell</span>
                 </div>
                 <h3 class="task-title">Task 5: Web Shell Execution on DMZ Web Server</h3>
-                <p class="task-desc">An uploaded ASPX web shell script was executed on DMZ web server <code>WEB-DMZ01</code>.</p>
+                <p class="task-desc">An uploaded ASPX web shell script was executed on DMZ web server <code>WEB-DMZ01</code>. A network sensor also captured the interaction.</p>
+                <a href="capture.pcap" download class="btn-submit" style="display:inline-block; margin-top:5px; margin-bottom:15px; background-color: var(--accent-blue); text-decoration: none;">⬇️ Download capture.pcap</a>
 
                 <div class="questions-list">
                     <div class="question-item">
@@ -983,6 +984,18 @@
                         </div>
                         <div class="hint-box" id="t5-q2-hint">Check user_agent in Web_Server_Log HTTP POST event.</div>
                         <div class="feedback-text" id="t5-q2-feedback"></div>
+                    </div>
+
+                    <div class="question-item">
+                        <div class="question-text">3. Analyze the PCAP file in Wireshark. What exact command did the attacker send to the web shell?</div>
+                        <div class="question-format">Format: command string</div>
+                        <div class="answer-row">
+                            <input type="text" class="answer-input" id="t5-q3-input" placeholder="Answer...">
+                            <button class="btn-submit" onclick="verifyFlag(5, 3, '2b03bb863859028322edb3cfaf74c094b0815eceadc44daab45dd78c72ed2972')">Submit</button>
+                            <button class="btn-hint" onclick="toggleHint('t5-q3-hint')">Hint</button>
+                        </div>
+                        <div class="hint-box" id="t5-q3-hint">Open capture.pcap in Wireshark, Right-Click the packet > Follow > TCP Stream. Look at the data at the bottom of the POST request.</div>
+                        <div class="feedback-text" id="t5-q3-feedback"></div>
                     </div>
                 </div>
 
@@ -1051,7 +1064,7 @@
         const pageSize = 15;
 
         const solvedQuestions = new Set();
-        const taskQuestionCounts = { 0: 5, 1: 3, 2: 2, 3: 2, 4: 1, 5: 2, 6: 2 };
+        const taskQuestionCounts = { 0: 5, 1: 3, 2: 2, 3: 2, 4: 1, 5: 3, 6: 2 };
         const taskSolvedCounts = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
         let totalScore = 0;
 
@@ -1109,6 +1122,11 @@
             }
             document.getElementById('completed-count').textContent = completedTasksCount;
             document.getElementById('main-progress-bar').style.width = Math.round((completedTasksCount / 6) * 100) + '%';
+            
+            if (completedTasksCount === 6 && !window.certificateShown) {
+                window.certificateShown = true;
+                setTimeout(showCertificateModal, 1000);
+            }
         }
 
         function toggleSection(sectionId) {
@@ -1281,7 +1299,91 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeLightbox();
         });
+
+        // Certificate Generation Logic
+        function showCertificateModal() {
+            document.getElementById('certOverlay').classList.add('active');
+        }
+        function closeCertModal() {
+            document.getElementById('certOverlay').classList.remove('active');
+        }
+        function generateCertificate() {
+            const name = document.getElementById('studentNameInput').value.trim();
+            if(!name) { alert("Please enter your name!"); return; }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = 1200; canvas.height = 800;
+            const ctx = canvas.getContext('2d');
+            
+            // Background
+            ctx.fillStyle = '#0b0e14'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Border
+            ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 15; ctx.strokeRect(30, 30, canvas.width-60, canvas.height-60);
+            ctx.strokeStyle = '#10b981'; ctx.lineWidth = 2; ctx.strokeRect(40, 40, canvas.width-80, canvas.height-80);
+            
+            ctx.textAlign = 'center';
+            // Title
+            ctx.font = 'bold 50px Arial'; ctx.fillStyle = '#ffffff';
+            ctx.fillText('CERTIFICATE OF COMPLETION', canvas.width/2, 200);
+            // Subtitle
+            ctx.font = '24px Arial'; ctx.fillStyle = '#94a3b8';
+            ctx.fillText('This certifies that', canvas.width/2, 280);
+            // Name
+            ctx.font = 'bold 64px Arial'; ctx.fillStyle = '#06b6d4';
+            ctx.fillText(name, canvas.width/2, 380);
+            // Description
+            ctx.font = '22px Arial'; ctx.fillStyle = '#e2e8f0';
+            ctx.fillText('has successfully completed the interactive', canvas.width/2, 480);
+            ctx.font = 'bold 30px Arial'; ctx.fillStyle = '#ffffff';
+            ctx.fillText('ManageEngine LOG360 Incident Response Lab', canvas.width/2, 530);
+            
+            // Date & Signature
+            ctx.font = '18px Arial'; ctx.fillStyle = '#94a3b8';
+            const dateStr = new Date().toLocaleDateString();
+            ctx.fillText(`Date: ${dateStr}`, 300, 680);
+            ctx.fillRect(200, 650, 200, 1);
+            
+            ctx.font = 'italic 28px Arial'; ctx.fillStyle = '#ffffff';
+            ctx.fillText('Ahmed Atef', canvas.width - 300, 670);
+            ctx.font = '18px Arial'; ctx.fillStyle = '#94a3b8';
+            ctx.fillText('Instructor Signature', canvas.width - 300, 700);
+            ctx.fillRect(canvas.width - 400, 650, 200, 1);
+            
+            // Download
+            const link = document.createElement('a');
+            link.download = `LOG360_Certificate_${name.replace(/ /g, '_')}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            closeCertModal();
+        }
     </script>
+
+    <!-- Certificate Modal Overlay -->
+    <style>
+        .cert-modal {
+            background: #111827; padding: 30px; border-radius: 12px; border: 1px solid var(--accent-green);
+            text-align: center; max-width: 400px; box-shadow: 0 10px 30px rgba(16, 185, 129, 0.2);
+        }
+        .cert-modal h2 { color: var(--accent-green); margin-bottom: 10px; }
+        .cert-modal p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px; }
+        .cert-modal input {
+            width: 100%; padding: 12px; background: #1f2937; border: 1px solid var(--border-color);
+            color: white; border-radius: 6px; margin-bottom: 20px; font-size: 1rem;
+        }
+        .cert-btn {
+            background: var(--accent-green); color: black; border: none; padding: 12px 24px;
+            font-weight: 700; border-radius: 6px; cursor: pointer; transition: 0.2s; width: 100%;
+        }
+        .cert-btn:hover { background: #0ea5e9; }
+    </style>
+    <div class="lightbox-overlay" id="certOverlay">
+        <div class="cert-modal" onclick="event.stopPropagation()">
+            <h2>🎉 Lab Completed!</h2>
+            <p>Congratulations! You have successfully investigated all alerts and secured the network. Enter your name below to claim your Certificate of Completion.</p>
+            <input type="text" id="studentNameInput" placeholder="Your Full Name">
+            <button class="cert-btn" onclick="generateCertificate()">Download Certificate</button>
+        </div>
+    </div>
 
     <!-- Lightbox Overlay Container -->
     <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox()">

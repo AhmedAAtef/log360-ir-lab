@@ -117,12 +117,12 @@ The external DMZ web server (`WEB-DMZ01`) was compromised via an uploaded web sh
 * **MITRE ATT&CK Mapping**: **[T1505.003 - Server Software Component: Web Shell](https://attack.mitre.org/techniques/T1505/003/)**
 
 ### Questions
-1. **What is the HTTP request method used by the attacker to interact with the web shell?**
-   * *Answer format: METHOD*
-2. **What is the URI path of the uploaded web shell file?**
-   * *Answer format: /path/to/webshell*
-3. **What is the Sysmon Event ID for file creation (`Sysmon Event ID 11`)?**
-   * *Answer format: integer*
+1. **What is the exact URI path of the uploaded web shell script?**
+   * *Answer format: /path/to/shell.aspx*
+2. **What specific User-Agent string was used by the attacker to interact with the web shell?**
+   * *Answer format: ToolName/version*
+3. **Analyze the PCAP file in Wireshark. What exact command did the attacker send to the web shell?**
+   * *Answer format: command string*
 
 ---
 
