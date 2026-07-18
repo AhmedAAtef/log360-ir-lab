@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  log360:
+    # ManageEngine does not always maintain a public "latest" tag for Log360 on DockerHub.
+    # If the official image pull fails, you may need to build a custom Dockerfile 
+    # that runs the Log360 Linux .bin installer inside an Ubuntu container.
+    image: manageengine/log360:latest
+    container_name: log360_lab_server
+    ports:
+      # Web Interface Ports
+      - "8095:8095"     # LOG360 Web UI (HTTP)
+      - "8400:8400"     # LOG360 Web UI (HTTPS)
+      
+      # Log Ingestion Ports
+      - "514:514/udp"   # Standard Syslog Ingestion (UDP)
+      - "514:514/tcp"   # Standard Syslog Ingestion (TCP)
+    volumes:
+      # Persistent storage so logs and configurations survive container restarts
+      - ./log360-data:/opt/ManageEngine/Log360/data
+      - ./log360-conf:/opt/ManageEngine/Log360/conf
+    environment:
+      - TZ=UTC
+    restart: unless-stopped
+    networks:
+      - lab_network
+
+networks:
+  lab_network:
+    driver: bridge
