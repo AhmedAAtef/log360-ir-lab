@@ -1,4 +1,4 @@
-﻿# ManageEngine LOG360 Incident Response Lab - Student Challenge Guide
+# ManageEngine LOG360 Incident Response Lab - Student Challenge Guide
 
 Welcome to the LOG360 interactive lab! Below are the details for each of the 6 investigative tasks.
 
@@ -14,9 +14,9 @@ Before investigating the 6 attack scenarios, complete the warm-up task to practi
    * *Answer format: integer*
 3. **What LOG360 module (Log Source) would you use to investigate Active Directory logon failures?**
    * *Answer format: Module_Name*
-4. **Search for Event ID 4625. How many failed logon events appear?**
+4. **Search for Event ID `4625`. How many failed logon events appear?**
    * *Answer format: integer*
-5. **Search for ssadmin.exe. What is the Host name where this was executed?**
+5. **Search for `vssadmin.exe`. What is the Host name where this was executed?**
    * *Answer format: HOST.DOMAIN.LOCAL*
 
 ---
@@ -29,7 +29,7 @@ The attacker initiated a password spraying attack against Active Directory accou
    * *Answer format: IP Address*
 2. **Which user account was successfully locked out due to threshold violations?**
    * *Answer format: username*
-3. **What is the precise sub_status code in the Event ID 4625 log that indicates a bad password?**
+3. **What is the precise `sub_status` code in the Event ID 4625 log that indicates a bad password?**
    * *Answer format: 0x00000000*
 
 ---
@@ -40,7 +40,7 @@ Following credential spraying, the attacker executed an encoded PowerShell paylo
 ### Questions
 1. **What destination port was targeted by the outbound PowerShell network connection?**
    * *Answer format: integer*
-2. **What parent process launched powershell.exe on WKSTN-FIN01.MEGACORP.LOCAL?**
+2. **What parent process launched `powershell.exe` on `WKSTN-FIN01.MEGACORP.LOCAL`?**
    * *Answer format: process.exe*
 
 ---
@@ -57,16 +57,16 @@ The attacker established persistence on the compromised workstation by installin
 ---
 
 ## 🚪 Task 4: Lateral Movement via PsExec Pivoting
-Using stolen Domain Admin credentials, the attacker pivoted from WKSTN-FIN01 to file server FILE-SRV01.
+Using stolen Domain Admin credentials, the attacker pivoted from `WKSTN-FIN01` to file server `FILE-SRV01`.
 
 ### Questions
-1. **What binary process name (Sysmon Event ID 1) was executed under services.exe during PsExec remote invocation?**
+1. **What binary process name (`Sysmon Event ID 1`) was executed under `services.exe` during PsExec remote invocation?**
    * *Answer format: filename.exe*
 
 ---
 
 ## 🕸️ Task 5: Web Shell Execution on DMZ Web Server
-An uploaded ASPX web shell script was executed on DMZ web server WEB-DMZ01. A network sensor also captured the interaction.
+An uploaded ASPX web shell script was executed on DMZ web server `WEB-DMZ01`. A network sensor also captured the interaction.
 
 ### Questions
 1. **What is the exact URI path of the uploaded web shell script?**
@@ -82,7 +82,7 @@ An uploaded ASPX web shell script was executed on DMZ web server WEB-DMZ01. A ne
 The attacker executed ransomware on the file server and deleted Volume Shadow Copies to prevent recovery.
 
 ### Questions
-1. **What command-line flag did the attacker use with ssadmin.exe to suppress confirmation prompts?**
+1. **What command-line flag did the attacker use with `vssadmin.exe` to suppress confirmation prompts?**
    * *Answer format: /flag*
 2. **What is the file extension of the encrypted ransomware files?**
    * *Answer format: .EXTENSION*
